@@ -35,40 +35,35 @@ class AudioController:
 
     def speak(self, text, language="en"):
         """
-        Converts text to speech using Edge-TTS and plays it.
-        Dynamically switches accents based on the requested language.
+        Converts text to speech using Edge-TTS and plays it safely.
         """
         voice = self.hi_voice if language == "hi" else self.uk_voice
         output_file = "rhea_response.mp3"
         
         print(f"[R.H.E.A. SPEAKING] {text}")
 
-        # Edge-TTS is asynchronous, so we run it in an event loop
         async def _generate_audio():
             communicate = edge_tts.Communicate(text, voice)
             await communicate.save(output_file)
             
-        asyncio.run(_generate_audio())
-
-        # Play the audio using Pygame (non-blocking)
         try:
+            # Safely run audio generation
+            asyncio.run(_generate_audio())
+
+            # Play the audio using Pygame
             pygame.mixer.music.load(output_file)
             pygame.mixer.music.play()
             
-            # Wait for the audio to finish playing before returning
             while pygame.mixer.music.get_busy():
                 pygame.time.Clock().tick(10)
                 
-        except Exception as e:
-            print(f"[ERROR] Audio playback failed: {e}")
-        finally:
-            # Clean up the file after playing so we don't clutter the directory
             pygame.mixer.music.unload()
             if os.path.exists(output_file):
-                try:
-                    os.remove(output_file)
-                except:
-                    pass # File might be locked, ignore and overwrite next time
+                os.remove(output_file)
+                
+        except Exception as e:
+            print(f"[WARNING] Voice output skipped or restricted: {e}")
+            print("[SYSTEM] Attempting to bypass TTS handshake failure... Continuing core loop execution.")
 
     def listen(self, timeout=5, phrase_time_limit=10):
         """
@@ -82,9 +77,6 @@ class AudioController:
                 audio = self.recognizer.listen(source, timeout=timeout, phrase_time_limit=phrase_time_limit)
                 
                 # Attempt to recognize the speech
-                # We tell the engine to expect English, but standard engines often 
-                # catch Hindi/Hinglish relatively well if spoken clearly.
-                # For strict Hindi switching, we could use language="hi-IN".
                 command = self.recognizer.recognize_google(audio)
                 print(f"[USER] {command}")
                 return command.lower()
@@ -113,6 +105,5 @@ class AudioController:
             
             if self.wake_word in speech:
                 print("[SYSTEM] Wake word detected! Waking up R.H.E.A.")
-                # Play a little sci-fi activation chime if you want, or just have her speak
                 self.speak("Online and listening, Boss.", "en")
-                return True 
+                return True

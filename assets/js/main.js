@@ -1,16 +1,12 @@
 // ==========================================================================
-// R.H.E.A. - FRONTEND LOGIC & PYWEBVIEW BRIDGE
+// R.H.E.A. - FRONTEND LOGIC & ASYNCHRONOUS BRIDGE SIGNALLING
 // ==========================================================================
 
-// Wait for the pywebview API to be ready before enabling interaction
 window.addEventListener('pywebviewready', function() {
     addLog('[SYSTEM] PyWebView Bridge established. Frontend connected to Core Engine.', 'rhea');
-    updateStatus('ONLINE - LISTENING');
+    updateStatus('AWAITING WAKE WORD');
 });
 
-/**
- * Appends a new line to the center console log.
- */
 function addLog(message, sender) {
     const chatContainer = document.getElementById('chat-container');
     const logLine = document.createElement('div');
@@ -24,14 +20,9 @@ function addLog(message, sender) {
     }
 
     chatContainer.appendChild(logLine);
-    
-    // Auto-scroll to the bottom
     chatContainer.scrollTop = chatContainer.scrollHeight;
 }
 
-/**
- * Grabs the text from the input box and sends it to the Python backend.
- */
 function sendTextCommand() {
     const inputField = document.getElementById('user-input');
     const command = inputField.value.trim();
@@ -44,10 +35,9 @@ function sendTextCommand() {
     if (window.pywebview && window.pywebview.api) {
         updateStatus('PROCESSING QUERY...');
         
-        window.pywebview.api.process_text_command(command).then(function(response) {
-            addLog(`[R.H.E.A.] ${response}`, 'rhea');
-            updateStatus('ONLINE - LISTENING');
-        }).catch(function(error) {
+        // Command is handed off to the backend asynchronously; Python returns "OK" immediately
+        // and uses clear webview injection handles to print logs when rendering is complete.
+        window.pywebview.api.process_text_command(command).catch(function(error) {
             addLog(`[ERROR] Communication failure: ${error}`, 'rhea');
             updateStatus('ERROR');
         });
@@ -62,10 +52,6 @@ function handleKeyPress(event) {
     }
 }
 
-// ==========================================================================
-// FUNCTIONS CALLED BY PYTHON BACKEND (TELEMETRY)
-// ==========================================================================
-
 function updateTelemetry(cpuPercent, ramString, ramPercent) {
     document.getElementById('cpu-val').innerText = `${cpuPercent}%`;
     document.getElementById('cpu-bar').style.width = `${cpuPercent}%`;
@@ -74,7 +60,6 @@ function updateTelemetry(cpuPercent, ramString, ramPercent) {
     document.getElementById('ram-bar').style.width = `${ramPercent}%`;
 }
 
-// NEW: Updates the Live Clock on the Dashboard
 function updateDateTime(dateString, timeString) {
     const dateEl = document.getElementById('date-val');
     const timeEl = document.getElementById('time-val');
@@ -95,8 +80,5 @@ function updateLanguageUI(lang) {
 
 function updateAutomationStatus(x, y, task) {
     const coordsEl = document.getElementById('mouse-coords');
-    const taskEl = document.getElementById('last-task');
-    
     if (coordsEl) coordsEl.innerText = `${x}, ${y}`;
-    if (taskEl) taskEl.innerText = task;
 }
