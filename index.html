@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>R.H.E.A. - AI Terminal</title>
+    
+    <link rel="stylesheet" href="assets/css/style.css">
+    
+    <style>
+        .hud-main {
+            display: grid;
+            grid-template-columns: 250px 1fr 250px;
+            gap: 20px;
+            height: 100%;
+            overflow: hidden; /* Strictly prevents page scrolling */
+        }
+
+        /* Side Panel Styling */
+        .side-panel {
+            border: 1px solid #ff6600;
+            background: rgba(10, 5, 0, 0.5);
+            box-shadow: inset 0 0 15px rgba(255, 102, 0, 0.05);
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px; /* Reduced gap for a tighter, cleaner look */
+        }
+
+        .panel-title {
+            font-size: 0.75rem;
+            color: #ffaa00;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-bottom: 1px solid rgba(255, 102, 0, 0.3);
+            padding-bottom: 5px;
+            margin-bottom: 5px;
+        }
+
+        /* Data Readouts */
+        .data-row {
+            display: flex;
+            justify-content: space-between;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.8rem;
+            margin-bottom: 5px;
+        }
+
+        .data-label { color: #ffffff; opacity: 0.7; }
+        .data-value { color: #ff6600; font-weight: bold; }
+
+        /* Progress Bars */
+        .progress-container {
+            width: 100%;
+            height: 4px; /* Thinner for a sleeker look */
+            background: #111;
+            border: 1px solid rgba(255, 102, 0, 0.3);
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: #ff6600;
+            box-shadow: 0 0 8px #ff6600;
+            transition: width 0.5s ease-out; /* Smooth sliding animation */
+        }
+
+        /* Center Layout Adjustment */
+        .core-display {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow: hidden; /* Keep it contained */
+        }
+
+        .ai-orb-container {
+            flex: 1; /* Automatically takes up available space above chat */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 150px;
+        }
+
+        /* Auto-scaling Console Box */
+        .console-box {
+            height: 35%; /* Scales with window size instead of fixed pixels */
+            min-height: 120px;
+            border-top: 1px solid rgba(255, 102, 0, 0.3);
+            padding: 10px;
+            overflow-y: auto;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 0.85rem;
+            color: #ffaa00;
+        }
+
+        /* Stylized thin scrollbar for the chat box only */
+        .console-box::-webkit-scrollbar { width: 4px; }
+        .console-box::-webkit-scrollbar-thumb { background: rgba(255, 102, 0, 0.5); }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        
+        <header class="hud-header">
+            <div class="hud-title">R.H.E.A. // CORE</div>
+            <div class="hud-status">
+                <span id="system-status">AWAITING WAKE WORD</span>
+                <div class="status-dot"></div>
+            </div>
+        </header>
+
+        <main class="hud-main">
+            
+            <div class="side-panel left-panel">
+                
+                <div class="telemetry-block">
+                    <div class="panel-title">Local Time</div>
+                    <div class="data-row">
+                        <span class="data-label">DATE</span>
+                        <span class="data-value" id="date-val">-- --- ----</span>
+                    </div>
+                    <div class="data-row">
+                        <span class="data-label">TIME</span>
+                        <span class="data-value" id="time-val">--:--:-- --</span>
+                    </div>
+                </div>
+
+                <div class="telemetry-block" style="margin-top: 15px;">
+                    <div class="panel-title">System Load</div>
+                    <div class="data-row">
+                        <span class="data-label">CPU USAGE</span>
+                        <span class="data-value" id="cpu-val">0%</span>
+                    </div>
+                    <div class="progress-container"><div class="progress-bar" style="width: 0%;" id="cpu-bar"></div></div>
+                    
+                    <div class="data-row" style="margin-top: 10px;">
+                        <span class="data-label">MEM ALLOC</span>
+                        <span class="data-value" id="ram-val">0 GB</span>
+                    </div>
+                    <div class="progress-container"><div class="progress-bar" style="width: 0%;" id="ram-bar"></div></div>
+                </div>
+            </div>
+
+            <div class="core-display">
+                <div class="ai-orb-container">
+                    <div class="ai-orb" id="orb-outer"></div>
+                    <div class="ai-orb-inner" id="orb-inner"></div>
+                </div>
+
+                <div class="console-box" id="chat-container">
+                    <div class="console-line rhea">[SYSTEM] Boot sequence initiated...</div>
+                    <div class="console-line rhea">[SYSTEM] Core systems connected. GUI optimized.</div>
+                    <div class="console-line rhea">[R.H.E.A.] Systems nominal. Awaiting voice input, Boss.</div>
+                </div>
+            </div>
+
+            <div class="side-panel right-panel">
+                <div class="telemetry-block">
+                    <div class="panel-title">Model Specs</div>
+                    <div class="data-row"><span class="data-label">LLM:</span><span class="data-value">LLAMA 3 (LOCAL)</span></div>
+                    <div class="data-row"><span class="data-label">RAG:</span><span class="data-value">MYSQL VECTOR</span></div>
+                    <div class="data-row"><span class="data-label">LANG:</span><span class="data-value" id="lang-status">ENG (UK)</span></div>
+                </div>
+
+                <div class="telemetry-block" style="margin-top: auto;">
+                    <div class="panel-title">PyAutoGUI Status</div>
+                    <div class="data-row"><span class="data-label">CONTROL:</span><span class="data-value" style="color: #00ff00;">GRANTED</span></div>
+                    <div class="data-row"><span class="data-label">X, Y COORDS:</span><span class="data-value" id="mouse-coords">0, 0</span></div>
+                </div>
+            </div>
+
+        </main>
+
+        <footer class="hud-footer">
+            <input type="text" id="user-input" class="input-box" placeholder="[MANUAL OVERRIDE] Enter text command here..." autocomplete="off" onkeypress="handleKeyPress(event)">
+            <button id="send-btn" class="btn-send" onclick="sendTextCommand()">EXECUTE</button>
+        </footer>
+
+    </div>
+
+    <script src="assets/js/main.js"></script>
+</body>
+</html>
